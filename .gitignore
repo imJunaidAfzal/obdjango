@@ -144,3 +144,4 @@ detected_images/*
 app/processed/*
 app/original_frames/*
 celebrity_detection/detected celebrity/*
+static
