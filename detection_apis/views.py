@@ -5,12 +5,12 @@ from django.http import Http404
 from pytube import YouTube
 import requests
 import shutil
-
 from rest_framework.parsers import FileUploadParser, MultiPartParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import Video, VideoFile
 from detection_module.Object_Detection import DetectObject
+
 
 def is_video_file(filename):
     video_file_extensions = (
@@ -104,23 +104,26 @@ def url_video(link):
             if flag:
                 return file_name
             else:
-                return {'Error Message': 'Something wrong with video link.'}
+                raise Http404('Video not readable')
         except FileNotFoundError as err:
             raise Http404('No Video Found at given link')
 
+
 from drf_yasg.utils import swagger_auto_schema
+
 
 class DetectionLink(APIView):
 
     @swagger_auto_schema(
         request_body=Video,
         responses={
-            201: "CREATED",
+            200: "OK",
             400: "Bad Request",
             500: "Internal Server Error",
         },
     )
     def post(self, request):
+        print(request.data['link'])
         file_name = url_video(request.data['link'])
         if "Error Message" not in file_name:
             detect = DetectObject()
@@ -129,7 +132,7 @@ class DetectionLink(APIView):
             return Response(result)
         else:
 
-            return {'Error Message': 'Something wrong with video link.'}
+            return Response({'Error Message': 'Something wrong with video link.'})
 
 
 class DetectionFile(APIView):
@@ -138,13 +141,12 @@ class DetectionFile(APIView):
     @swagger_auto_schema(
         request_body=VideoFile,
         responses={
-            201: "CREATED",
+            200: "OK",
             400: "Bad Request",
             500: "Internal Server Error",
         },
     )
     def post(self, request):
-        print(request.data['file'])
         file = request.data['file']
         detect = DetectObject()
         path = file
@@ -154,8 +156,8 @@ class DetectionFile(APIView):
         if flag:
             images = detect.video_to_images(str(file))
             if "Error Message" in images:
-                return {"Error Message": "Invalid Input Video"}
+                return Response({"Error Message": "Invalid Input Video"})
             result = detect.detect_objects(images)
             return Response(result)
         else:
-            return {"Error Message": "Invalid Input Video"}
+            return Response({"Error Message": "Invalid Input Video"})
